@@ -1,0 +1,20 @@
+{
+  "classes": [
+    "Negative",
+    "Positive"
+  ],
+  "accuracy": 0.9983333333333333,
+  "precision_macro": 0.99833532667464,
+  "recall_macro": 0.9983333333333333,
+  "f1_macro": 0.9983333316666649,
+  "confusion_matrix": [
+    [
+      2992,
+      8
+    ],
+    [
+      2,
+      2998
+    ]
+  ]
+}
