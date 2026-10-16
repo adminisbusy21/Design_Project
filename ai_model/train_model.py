@@ -24,7 +24,7 @@ torch.manual_seed(SEED)
 
 # Paths and settings
 BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "dataset_split"
+DATA_DIR = Path(__file__).parent / "dataset_split_deduplicated"
 MODEL_PATH = BASE_DIR / "resnet18_crack_classifier.pth"
 METRICS_PATH = BASE_DIR / "evaluation_metrics.json"
 
@@ -135,7 +135,7 @@ for epoch in range(EPOCHS):
 
     train_loss = running_loss / total
     train_accuracy = correct / total
-
+ 
     model.eval()
     val_loss_sum = 0.0
     val_total = 0

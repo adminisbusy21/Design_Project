@@ -3,18 +3,18 @@
     "Negative",
     "Positive"
   ],
-  "accuracy": 0.9983333333333333,
-  "precision_macro": 0.99833532667464,
-  "recall_macro": 0.9983333333333333,
-  "f1_macro": 0.9983333316666649,
+  "accuracy": 0.999,
+  "precision_macro": 0.999,
+  "recall_macro": 0.999,
+  "f1_macro": 0.999,
   "confusion_matrix": [
     [
-      2992,
-      8
+      2997,
+      3
     ],
     [
-      2,
-      2998
+      3,
+      2997
     ]
   ]
 }

@@ -15,7 +15,7 @@ from sklearn.metrics import (
 )
 
 BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "dataset_split"
+DATA_DIR = Path(__file__).parent / "dataset_split_deduplicated"
 MODEL_PATH = BASE_DIR / "resnet18_crack_classifier.pth"
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
