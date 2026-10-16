@@ -1,9 +1,11 @@
 from io import BytesIO
 from pathlib import Path
-
+from backend.priority import calculate_priority
 from PIL import Image, UnidentifiedImageError
 from fastapi import FastAPI, File, HTTPException, UploadFile
-
+from backend.models import InspectionResult
+from backend.database import SessionLocal
+from pydantic import BaseModel
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
@@ -148,7 +150,83 @@ async def health_check():
 # --------------------------------------------------
 # Image upload and classification endpoint
 # --------------------------------------------------
+@app.get("/inspections")
+async def get_inspections():
+    db = SessionLocal()
 
+    try:
+        results = (
+            db.query(InspectionResult)
+            .order_by(InspectionResult.created_at.desc())
+            .all()
+        )
+
+        return [
+            {
+                "id": result.id,
+                "filename": result.filename,
+                "format": result.image_format,
+                "width": result.width,
+                "height": result.height,
+                "size_bytes": result.size_bytes,
+                "prediction": result.prediction,
+                "confidence": result.confidence,
+                "priority": result.priority,
+                "priority_reason": result.priority_reason,
+                "review_required": result.review_required,
+                "review_status": result.review_status,
+                "review_notes": result.review_notes,
+                "created_at": result.created_at,
+            }
+            for result in results
+        ]
+    finally:
+        db.close()
+class ReviewRequest(BaseModel):
+    review_status: str
+    review_notes: str | None = None
+
+
+@app.put("/inspections/{inspection_id}/review")
+async def review_inspection(
+    inspection_id: int,
+    review: ReviewRequest,
+):
+    if review.review_status not in {"APPROVED", "REJECTED"}:
+        raise HTTPException(
+            status_code=400,
+            detail="review_status must be APPROVED or REJECTED.",
+        )
+
+    db = SessionLocal()
+
+    try:
+        inspection = (
+            db.query(InspectionResult)
+            .filter(InspectionResult.id == inspection_id)
+            .first()
+        )
+
+        if inspection is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Inspection result not found.",
+            )
+
+        inspection.review_status = review.review_status
+        inspection.review_notes = review.review_notes
+
+        db.commit()
+        db.refresh(inspection)
+
+        return {
+            "message": "Inspection review updated successfully",
+            "id": inspection.id,
+            "review_status": inspection.review_status,
+            "review_notes": inspection.review_notes,
+        }
+    finally:
+        db.close()
 @app.post("/upload")
 async def upload_images(file: UploadFile = File(...)):
 
@@ -205,13 +283,35 @@ async def upload_images(file: UploadFile = File(...)):
 
             # Run AI classification
             prediction_result = predict_damage(image.copy())
-
+            priority_result = calculate_priority(
+                 prediction_result["prediction"],
+                 prediction_result["confidence"],
+            )
     except (UnidentifiedImageError, OSError, ValueError):
         raise HTTPException(
             status_code=400,
             detail="Uploaded file is not a valid image",
         )
-
+    db = SessionLocal()
+    try:
+        inspection_result = InspectionResult(
+            filename=file.filename or "unknown",
+            image_format=image_format,
+            width=width,
+            height=height,
+            size_bytes=len(image_data),
+            prediction=prediction_result["prediction"],
+            confidence=prediction_result["confidence"],
+            priority=priority_result["priority"],
+            priority_reason=priority_result["reason"],
+            review_required=priority_result["review_required"],
+            review_status="PENDING",
+            review_notes=None,
+    )
+        db.add(inspection_result)
+        db.commit()
+    finally:
+        db.close()    
     # Return classification result
     return {
         "message": "Image classified successfully",
@@ -221,6 +321,9 @@ async def upload_images(file: UploadFile = File(...)):
         "height": height,
         "size_bytes": len(image_data),
         "prediction": prediction_result["prediction"],
+        "priority": priority_result["priority"],
+        "priority_reason": priority_result["reason"],
+        "review_required": priority_result["review_required"],
         "confidence": prediction_result["confidence"],
         "model_version": "resnet18-v1",
     }
