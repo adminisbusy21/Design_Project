@@ -39,6 +39,8 @@ async def upload_images(file:UploadFile = File(...)):
                 raise HTTPException(status_code=400, detail="Unsupported image format",)
             if width <= 0 or height <= 0:
                 raise HTTPException(status_code=400, detail="Invalid image dimensions",)
+            if width > 6000 or height > 6000:
+                raise HTTPException(status_code=400,detail="Image dimensions must not exceed 6000 pixels per side.",)
     except (UnidentifiedImageError, OSError,ValueError):
         raise HTTPException(status_code=400,detail="Uploaded file is not a valid image",)
     return {
