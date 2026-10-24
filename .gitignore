@@ -23,3 +23,8 @@ Thumbs.db
 
 ai_model/dataset_split/
 ai_model/dataset_split_deduplicated/
+# Generated damage-classification dataset splits
+ai_model/damage_dataset_split/
+
+# Local datasets and downloaded images
+Structural_Damage_Dataset/

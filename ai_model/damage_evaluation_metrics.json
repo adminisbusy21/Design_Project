@@ -1,0 +1,95 @@
+{
+  "classes": [
+    "Crack",
+    "Non-Crack",
+    "Road_Pothole",
+    "Road_Surface_Erosion",
+    "Rust_Corrosion"
+  ],
+  "accuracy": 0.9368231046931408,
+  "precision_macro": 0.927071069602474,
+  "recall_macro": 0.9209688859150218,
+  "f1_macro": 0.923445642552761,
+  "confusion_matrix": [
+    [
+      143,
+      6,
+      1,
+      0,
+      0
+    ],
+    [
+      4,
+      145,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      48,
+      13,
+      0
+    ],
+    [
+      0,
+      2,
+      6,
+      88,
+      2
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      95
+    ]
+  ],
+  "classification_report": {
+    "Crack": {
+      "precision": 0.9727891156462585,
+      "recall": 0.9533333333333334,
+      "f1-score": 0.9629629629629629,
+      "support": 150.0
+    },
+    "Non-Crack": {
+      "precision": 0.9477124183006536,
+      "recall": 0.9666666666666667,
+      "f1-score": 0.9570957095709571,
+      "support": 150.0
+    },
+    "Road_Pothole": {
+      "precision": 0.8727272727272727,
+      "recall": 0.7868852459016393,
+      "f1-score": 0.8275862068965517,
+      "support": 61.0
+    },
+    "Road_Surface_Erosion": {
+      "precision": 0.8627450980392157,
+      "recall": 0.8979591836734694,
+      "f1-score": 0.88,
+      "support": 98.0
+    },
+    "Rust_Corrosion": {
+      "precision": 0.979381443298969,
+      "recall": 1.0,
+      "f1-score": 0.9895833333333334,
+      "support": 95.0
+    },
+    "accuracy": 0.9368231046931408,
+    "macro avg": {
+      "precision": 0.927071069602474,
+      "recall": 0.9209688859150218,
+      "f1-score": 0.923445642552761,
+      "support": 554.0
+    },
+    "weighted avg": {
+      "precision": 0.9366459394397936,
+      "recall": 0.9368231046931408,
+      "f1-score": 0.9363573577029679,
+      "support": 554.0
+    }
+  }
+}
