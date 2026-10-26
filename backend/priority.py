@@ -1,45 +1,85 @@
+DAMAGE_CLASSES = {
+    "Crack",
+    "Non-Crack",
+    "Road_Pothole",
+    "Road_Surface_Erosion",
+    "Rust_Corrosion",
+}
+
+
 def calculate_priority(prediction: str, confidence: float) -> dict:
     """
-    Calculate preliminary inspection priority from AI prediction confidence.
+    Calculate preliminary inspection priority for the 5-class
+    structural damage classifier.
 
-    This is an inspection-prioritization aid, not a structural safety assessment.
+    Priority is an inspection-ordering aid, not a structural
+    safety assessment. Model confidence represents prediction
+    certainty and must not be interpreted as physical severity.
     """
 
-    prediction = prediction.strip().lower()
+    prediction = prediction.strip()
 
-    if prediction not in {"positive", "negative"}:
-        raise ValueError("Prediction must be 'Positive' or 'Negative'.")
+    if prediction not in DAMAGE_CLASSES:
+        raise ValueError(
+            f"Unsupported prediction '{prediction}'. "
+            f"Expected one of: {sorted(DAMAGE_CLASSES)}."
+        )
 
     if not 0.0 <= confidence <= 1.0:
         raise ValueError("Confidence must be between 0.0 and 1.0.")
 
-    # High-confidence detected damage
-    if prediction == "positive" and confidence >= 0.80:
+    # Low-confidence predictions require human review.
+    if confidence < 0.80:
         return {
-            "priority": "HIGH",
-            "reason": "Damage detected with high model confidence.",
+            "priority": "P5",
+            "reason": (
+                f"{prediction} predicted, but model confidence is below "
+                "the high-confidence threshold; human review required."
+            ),
+            "review_required": True,
+        }
+
+    # High-confidence non-damage result.
+    if prediction == "Non-Crack":
+        if confidence >= 0.95:
+            priority = "P10"
+        elif confidence >= 0.90:
+            priority = "P9"
+        else:
+            priority = "P8"
+
+        return {
+            "priority": priority,
+            "reason": (
+                "Non-Crack predicted with high model confidence; "
+                "lower inspection urgency."
+            ),
             "review_required": False,
         }
 
-    # Detected damage, but model is uncertain
-    if prediction == "positive" and confidence < 0.80:
-        return {
-            "priority": "MEDIUM",
-            "reason": "Damage detected, but model confidence is below the high-confidence threshold.",
-            "review_required": True,
-        }
+    # High-confidence damage classifications.
+    priority_ranges = {
+        "Crack": ("P1", "P2", "P3"),
+        "Rust_Corrosion": ("P2", "P3", "P4"),
+        "Road_Pothole": ("P3", "P4", "P5"),
+        "Road_Surface_Erosion": ("P4", "P5", "P6"),
+    }
 
-    # No damage detected, but model is uncertain
-    if prediction == "negative" and confidence < 0.80:
-        return {
-            "priority": "MEDIUM",
-            "reason": "No damage detected, but model confidence is below the high-confidence threshold.",
-            "review_required": True,
-        }
+    high, medium, low = priority_ranges[prediction]
 
-    # High-confidence no-damage result
+    if confidence >= 0.95:
+        priority = high
+    elif confidence >= 0.90:
+        priority = medium
+    else:
+        priority = low
+
     return {
-        "priority": "LOW",
-        "reason": "No damage detected with high model confidence.",
+        "priority": priority,
+        "reason": (
+            f"{prediction} predicted with high model confidence; "
+            "inspection priority assigned according to the preliminary "
+            "damage-category prioritization policy."
+        ),
         "review_required": False,
     }

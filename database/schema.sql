@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS inspection_results (
     priority VARCHAR(20) NOT NULL,
     priority_reason TEXT NOT NULL,
     review_required BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     review_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    review_notes TEXT,
+    review_notes TEXT
 );

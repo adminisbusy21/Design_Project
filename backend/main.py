@@ -28,8 +28,6 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MiB
 MAX_IMAGE_SIDE = 6000
 AI_DIR = Path(__file__).resolve().parent.parent / "ai_model"
 
-CRACK_CLASSES = ["Negative", "Positive"]
-CRACK_MODEL_PATH = AI_DIR / "resnet18_crack_classifier.pth"
 DAMAGE_CLASSES = [
     "Crack",
     "Non-Crack",
@@ -64,8 +62,6 @@ def load_resnet18(model_path: Path, number_of_classes: int):
     network.eval()
     return network
 
-
-crack_model = load_resnet18(CRACK_MODEL_PATH, len(CRACK_CLASSES))
 damage_model = load_resnet18(DAMAGE_MODEL_PATH, len(DAMAGE_CLASSES))
 
 
@@ -152,7 +148,6 @@ async def health_check():
         "status": "healthy",
         "service": "damage-classification-api",
         "device": str(DEVICE),
-        "crack_model_loaded": crack_model is not None,
         "damage_model_loaded": damage_model is not None,
     }
 
