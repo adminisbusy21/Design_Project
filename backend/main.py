@@ -35,8 +35,7 @@ DAMAGE_CLASSES = [
     "Road_Surface_Erosion",
     "Rust_Corrosion",
 ]
-DAMAGE_MODEL_PATH = AI_DIR / "resnet18_damage_classifier.pth"
-
+DAMAGE_MODEL_PATH = AI_DIR / "resnet18_damage_classifier_clean.pth"
 image_transform = transforms.Compose(
     [
         transforms.Resize((224, 224)),

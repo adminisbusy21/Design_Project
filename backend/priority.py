@@ -9,12 +9,11 @@ DAMAGE_CLASSES = {
 
 def calculate_priority(prediction: str, confidence: float) -> dict:
     """
-    Calculate preliminary inspection priority for the 5-class
+    Calculate preliminary inspection priority for the five-class
     structural damage classifier.
 
-    Priority is an inspection-ordering aid, not a structural
-    safety assessment. Model confidence represents prediction
-    certainty and must not be interpreted as physical severity.
+    This is an inspection-ordering aid, not a structural safety
+    assessment. Model confidence does not represent physical severity.
     """
 
     prediction = prediction.strip()
@@ -57,7 +56,7 @@ def calculate_priority(prediction: str, confidence: float) -> dict:
             "review_required": False,
         }
 
-    # High-confidence damage classifications.
+    # Preliminary priority ranges for damage classifications.
     priority_ranges = {
         "Crack": ("P1", "P2", "P3"),
         "Rust_Corrosion": ("P2", "P3", "P4"),
@@ -82,4 +81,4 @@ def calculate_priority(prediction: str, confidence: float) -> dict:
             "damage-category prioritization policy."
         ),
         "review_required": False,
-    }
+    } 

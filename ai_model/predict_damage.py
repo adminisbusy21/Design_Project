@@ -3,10 +3,16 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from torchvision import models, transforms
 
-BASE_DIR = Path(__file__).parent
+
+# ==================================================
+# 1. CONFIGURATION
+# ==================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
 MODEL_PATH = BASE_DIR / "resnet18_damage_classifier.pth"
 
 CLASSES = [
@@ -17,7 +23,27 @@ CLASSES = [
     "Rust_Corrosion",
 ]
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
+# This is a warning threshold, not a guarantee of correctness.
+LOW_CONFIDENCE_THRESHOLD = 0.70
+
+
+# ==================================================
+# 2. CHECK MODEL FILE
+# ==================================================
+
+if not MODEL_PATH.is_file():
+    raise FileNotFoundError(
+        f"Trained model not found: {MODEL_PATH}"
+    )
+
+
+# ==================================================
+# 3. IMAGE PREPROCESSING
+# ==================================================
 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -28,31 +54,112 @@ transform = transforms.Compose([
     ),
 ])
 
-model = models.resnet18(weights=None)
-model.fc = nn.Linear(model.fc.in_features, len(CLASSES))
 
-state_dict = torch.load(MODEL_PATH, map_location=DEVICE)
-model.load_state_dict(state_dict)
+# ==================================================
+# 4. LOAD TRAINED MODEL
+# ==================================================
+
+model = models.resnet18(weights=None)
+
+model.fc = nn.Linear(
+    model.fc.in_features,
+    len(CLASSES),
+)
+
+state_dict = torch.load(
+    MODEL_PATH,
+    map_location=DEVICE,
+    weights_only=True,
+)
+
+model.load_state_dict(
+    state_dict,
+    strict=True,
+)
+
 model = model.to(DEVICE)
 model.eval()
 
-image_path = input("Enter the full path of an image: ").strip().strip('"')
-image_path = Path(image_path)
+print(f"Model loaded: {MODEL_PATH.name}")
+print(f"Device: {DEVICE}")
+print(f"Classes: {CLASSES}")
+
+
+# ==================================================
+# 5. GET IMAGE PATH
+# ==================================================
+
+image_path_text = input(
+    "\nEnter the full path of an image: "
+).strip().strip('"')
+
+image_path = Path(image_path_text)
 
 if not image_path.is_file():
-    raise FileNotFoundError(f"Image not found: {image_path}")
+    raise FileNotFoundError(
+        f"Image not found: {image_path}"
+    )
 
-image = Image.open(image_path).convert("RGB")
+
+# ==================================================
+# 6. LOAD AND PREPROCESS IMAGE
+# ==================================================
+
+try:
+    with Image.open(image_path) as source_image:
+        image = source_image.convert("RGB")
+
+except (UnidentifiedImageError, OSError) as exc:
+    raise ValueError(
+        f"The selected file is not a valid readable image: "
+        f"{image_path}"
+    ) from exc
+
 image_tensor = transform(image).unsqueeze(0).to(DEVICE)
 
+
+# ==================================================
+# 7. PREDICT DAMAGE CLASS
+# ==================================================
+
 with torch.no_grad():
-    probabilities = torch.softmax(model(image_tensor), dim=1)[0]
+    logits = model(image_tensor)
+    probabilities = torch.softmax(logits, dim=1)[0]
 
 confidence, predicted_index = probabilities.max(dim=0)
 
-print("\nPrediction:", CLASSES[predicted_index.item()])
+predicted_class = CLASSES[predicted_index.item()]
+
+
+# ==================================================
+# 8. DISPLAY RESULTS
+# ==================================================
+
+print("\n========== DAMAGE CLASSIFICATION ==========")
+
+print(f"Image: {image_path.name}")
+print(f"Prediction: {predicted_class}")
 print(f"Confidence: {confidence.item() * 100:.2f}%")
 
-print("\nAll class probabilities:")
-for index in probabilities.argsort(descending=True).tolist():
-    print(f"{CLASSES[index]}: {probabilities[index].item() * 100:.2f}%")
+if confidence.item() < LOW_CONFIDENCE_THRESHOLD:
+    print(
+        "\nWARNING: The prediction confidence is low. "
+        "Manual review is recommended."
+    )
+
+print("\nClass probability breakdown:")
+
+for index in probabilities.argsort(
+    descending=True
+).tolist():
+
+    class_name = CLASSES[index]
+    score = probabilities[index].item() * 100
+
+    print(f"{class_name}: {score:.2f}%")
+
+print(
+    "\nNote: Confidence scores are model outputs, "
+    "not guarantees that the classification is correct."
+)
+
