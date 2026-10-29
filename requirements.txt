@@ -1,3 +1,4 @@
+
 torch==2.14.1
 torchvision==0.29.1
 fastapi
@@ -8,5 +9,6 @@ scikit-learn
 numpy
 sqlalchemy
 psycopg[binary]
+python-dotenv
 pytest
 httpx

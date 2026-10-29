@@ -35,11 +35,9 @@ damage_dataset_split_clean_v2/
 
 # Generated cleanup and evaluation reports
 clean_dataset_report.json
-ai_model/damage_evaluation_metrics_clean.json
 
 # Local trained model weights
 ai_model/resnet18_damage_classifier_clean.pth
-
 # Python cache
 __pycache__/
 *.py[cod]

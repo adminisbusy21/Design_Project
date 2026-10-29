@@ -1,4 +1,6 @@
 
+"""Run five-class structural damage classification on a local image."""
+
 from pathlib import Path
 
 import torch
@@ -7,13 +9,8 @@ from PIL import Image, UnidentifiedImageError
 from torchvision import models, transforms
 
 
-# ==================================================
-# 1. CONFIGURATION
-# ==================================================
-
-BASE_DIR = Path(__file__).resolve().parent
-
-MODEL_PATH = BASE_DIR / "resnet18_damage_classifier.pth"
+ROOT = Path(__file__).resolve().parent.parent
+MODEL_PATH = ROOT / "ai_model" / "resnet18_damage_classifier_clean.pth"
 
 CLASSES = [
     "Crack",
@@ -23,29 +20,9 @@ CLASSES = [
     "Rust_Corrosion",
 ]
 
-DEVICE = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
-)
+CONFIDENCE_THRESHOLD = 0.80
 
-# This is a warning threshold, not a guarantee of correctness.
-LOW_CONFIDENCE_THRESHOLD = 0.70
-
-
-# ==================================================
-# 2. CHECK MODEL FILE
-# ==================================================
-
-if not MODEL_PATH.is_file():
-    raise FileNotFoundError(
-        f"Trained model not found: {MODEL_PATH}"
-    )
-
-
-# ==================================================
-# 3. IMAGE PREPROCESSING
-# ==================================================
-
-transform = transforms.Compose([
+IMAGE_TRANSFORM = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(
@@ -55,111 +32,100 @@ transform = transforms.Compose([
 ])
 
 
-# ==================================================
-# 4. LOAD TRAINED MODEL
-# ==================================================
+def load_model(device: torch.device) -> nn.Module:
+    """Load the trained five-class ResNet18 checkpoint."""
+    if not MODEL_PATH.is_file():
+        raise FileNotFoundError(
+            f"Model checkpoint not found: {MODEL_PATH}\n"
+            "Obtain the trained checkpoint before running prediction."
+        )
 
-model = models.resnet18(weights=None)
+    model = models.resnet18(weights=None)
+    model.fc = nn.Linear(model.fc.in_features, len(CLASSES))
 
-model.fc = nn.Linear(
-    model.fc.in_features,
-    len(CLASSES),
-)
+    state_dict = torch.load(
+        MODEL_PATH,
+        map_location=device,
+        weights_only=True,
+    )
+    model.load_state_dict(state_dict, strict=True)
+    model.to(device)
+    model.eval()
 
-state_dict = torch.load(
-    MODEL_PATH,
-    map_location=DEVICE,
-    weights_only=True,
-)
-
-model.load_state_dict(
-    state_dict,
-    strict=True,
-)
-
-model = model.to(DEVICE)
-model.eval()
-
-print(f"Model loaded: {MODEL_PATH.name}")
-print(f"Device: {DEVICE}")
-print(f"Classes: {CLASSES}")
+    return model
 
 
-# ==================================================
-# 5. GET IMAGE PATH
-# ==================================================
+def predict_image(
+    model: nn.Module,
+    image_path: Path,
+    device: torch.device,
+) -> tuple[str, float, dict[str, float]]:
+    """Return predicted class, confidence, and class probabilities."""
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Image not found: {image_path}")
 
-image_path_text = input(
-    "\nEnter the full path of an image: "
-).strip().strip('"')
+    try:
+        with Image.open(image_path) as image:
+            image = image.convert("RGB")
+            tensor = IMAGE_TRANSFORM(image).unsqueeze(0)
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError(f"Cannot read image: {image_path}") from exc
 
-image_path = Path(image_path_text)
+    tensor = tensor.to(device)
 
-if not image_path.is_file():
-    raise FileNotFoundError(
-        f"Image not found: {image_path}"
+    with torch.no_grad():
+        logits = model(tensor)
+        probabilities = torch.softmax(logits, dim=1)[0]
+
+    predicted_index = int(probabilities.argmax().item())
+    confidence = float(probabilities[predicted_index].item())
+
+    all_probabilities = {
+        class_name: float(probabilities[index].item())
+        for index, class_name in enumerate(CLASSES)
+    }
+
+    return CLASSES[predicted_index], confidence, all_probabilities
+
+
+def main() -> None:
+    image_input = input("Enter image path: ").strip().strip('"')
+
+    if not image_input:
+        print("Error: no image path provided.")
+        return
+
+    image_path = Path(image_input).expanduser()
+
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
     )
 
+    try:
+        model = load_model(device)
+        prediction, confidence, probabilities = predict_image(
+            model,
+            image_path,
+            device,
+        )
+    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+        print(f"Error: {exc}")
+        return
 
-# ==================================================
-# 6. LOAD AND PREPROCESS IMAGE
-# ==================================================
+    print(f"\nDevice: {device}")
+    print(f"Prediction: {prediction}")
+    print(f"Confidence: {confidence:.2%}")
 
-try:
-    with Image.open(image_path) as source_image:
-        image = source_image.convert("RGB")
+    print("\nClass probabilities:")
+    for class_name, probability in probabilities.items():
+        print(f"  {class_name}: {probability:.2%}")
 
-except (UnidentifiedImageError, OSError) as exc:
-    raise ValueError(
-        f"The selected file is not a valid readable image: "
-        f"{image_path}"
-    ) from exc
-
-image_tensor = transform(image).unsqueeze(0).to(DEVICE)
-
-
-# ==================================================
-# 7. PREDICT DAMAGE CLASS
-# ==================================================
-
-with torch.no_grad():
-    logits = model(image_tensor)
-    probabilities = torch.softmax(logits, dim=1)[0]
-
-confidence, predicted_index = probabilities.max(dim=0)
-
-predicted_class = CLASSES[predicted_index.item()]
+    if confidence < CONFIDENCE_THRESHOLD:
+        print(
+            "\nWarning: confidence is below "
+            f"{CONFIDENCE_THRESHOLD:.0%}. Manual review is recommended."
+        )
 
 
-# ==================================================
-# 8. DISPLAY RESULTS
-# ==================================================
-
-print("\n========== DAMAGE CLASSIFICATION ==========")
-
-print(f"Image: {image_path.name}")
-print(f"Prediction: {predicted_class}")
-print(f"Confidence: {confidence.item() * 100:.2f}%")
-
-if confidence.item() < LOW_CONFIDENCE_THRESHOLD:
-    print(
-        "\nWARNING: The prediction confidence is low. "
-        "Manual review is recommended."
-    )
-
-print("\nClass probability breakdown:")
-
-for index in probabilities.argsort(
-    descending=True
-).tolist():
-
-    class_name = CLASSES[index]
-    score = probabilities[index].item() * 100
-
-    print(f"{class_name}: {score:.2f}%")
-
-print(
-    "\nNote: Confidence scores are model outputs, "
-    "not guarantees that the classification is correct."
-)
-
+if __name__ == "__main__":
+    main()

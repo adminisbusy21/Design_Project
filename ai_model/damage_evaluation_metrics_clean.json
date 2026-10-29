@@ -1,0 +1,98 @@
+{
+  "classes": [
+    "Crack",
+    "Non-Crack",
+    "Road_Pothole",
+    "Road_Surface_Erosion",
+    "Rust_Corrosion"
+  ],
+  "accuracy": 0.946360153256705,
+  "precision_macro": 0.9290745747784293,
+  "recall_macro": 0.9265835065835066,
+  "f1_macro": 0.9275413524881813,
+  "confusion_matrix": [
+    [
+      148,
+      1,
+      0,
+      0,
+      1
+    ],
+    [
+      8,
+      142,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      0,
+      42,
+      9,
+      0
+    ],
+    [
+      0,
+      0,
+      8,
+      66,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      96
+    ]
+  ],
+  "classification_report": {
+    "Crack": {
+      "precision": 0.9426751592356688,
+      "recall": 0.9866666666666667,
+      "f1-score": 0.9641693811074918,
+      "support": 150.0
+    },
+    "Non-Crack": {
+      "precision": 0.993006993006993,
+      "recall": 0.9466666666666667,
+      "f1-score": 0.9692832764505119,
+      "support": 150.0
+    },
+    "Road_Pothole": {
+      "precision": 0.84,
+      "recall": 0.8076923076923077,
+      "f1-score": 0.8235294117647058,
+      "support": 52.0
+    },
+    "Road_Surface_Erosion": {
+      "precision": 0.88,
+      "recall": 0.8918918918918919,
+      "f1-score": 0.8859060402684564,
+      "support": 74.0
+    },
+    "Rust_Corrosion": {
+      "precision": 0.9896907216494846,
+      "recall": 1.0,
+      "f1-score": 0.9948186528497409,
+      "support": 96.0
+    },
+    "accuracy": 0.946360153256705,
+    "macro avg": {
+      "precision": 0.9290745747784293,
+      "recall": 0.9265835065835066,
+      "f1-score": 0.9275413524881813,
+      "support": 522.0
+    },
+    "weighted avg": {
+      "precision": 0.9466717090320877,
+      "recall": 0.946360153256705,
+      "f1-score": 0.9461706239442648,
+      "support": 522.0
+    }
+  },
+  "test_images": 522,
+  "model_path": "C:\\Users\\Gauri\\Downloads\\5y9wdsg2zt-2\\Design_Project\\ai_model\\resnet18_damage_classifier_clean.pth",
+  "split_path": "C:\\Users\\Gauri\\Downloads\\5y9wdsg2zt-2\\Design_Project\\damage_dataset_split_clean_v2"
+}
