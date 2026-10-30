@@ -1,0 +1,16 @@
+﻿
+.git
+.venv
+venv
+__pycache__
+.pytest_cache
+.coverage
+.env
+.env.*
+docker-data
+damage_inspection.db
+frontend
+Structural_Damage_Dataset
+ai_model/dataset_split
+ai_model/dataset_split_deduplicated
+ai_model/damage_dataset_split

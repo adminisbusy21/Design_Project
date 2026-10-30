@@ -10,6 +10,8 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 from torchvision import models, transforms
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from backend.database import SessionLocal
 from backend.models import InspectionResult
 from backend.priority import calculate_priority
@@ -26,6 +28,17 @@ app = FastAPI(
         "risk-aware inspection prioritization, and review management."
     ),
     version="2.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

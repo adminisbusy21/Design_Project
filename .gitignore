@@ -41,3 +41,4 @@ ai_model/resnet18_damage_classifier_clean.pth
 # Python cache
 __pycache__/
 *.py[cod]
+docker-data/
